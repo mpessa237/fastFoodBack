@@ -1,6 +1,8 @@
 package com.herve.fastfood.controllers;
 
 import com.herve.fastfood.dtos.AdminRequest;
+import com.herve.fastfood.dtos.LoginRequest;
+import com.herve.fastfood.dtos.LoginResponse;
 import com.herve.fastfood.dtos.UtilisateurRequest;
 import com.herve.fastfood.models.Utilisateur;
 import com.herve.fastfood.services.UtilisateurService;
@@ -30,4 +32,10 @@ public class UtilisateurController {
     public ResponseEntity<Utilisateur> create(@Valid @RequestBody AdminRequest adminRequest){
         return ResponseEntity.ok(utilisateurService.registerAdmin(adminRequest));
     }
+
+    @PostMapping("/authenticate")
+    public ResponseEntity<LoginResponse> authenticate(@Valid @RequestBody LoginRequest loginRequest){
+        return ResponseEntity.ok(this.utilisateurService.login(loginRequest));
+    }
+
 }
