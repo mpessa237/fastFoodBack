@@ -5,6 +5,9 @@ import com.herve.fastfood.dtos.MenuResponse;
 import com.herve.fastfood.services.MenuService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -15,11 +18,11 @@ import org.springframework.web.multipart.MultipartFile;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/menus")
-@PreAuthorize("hasAuthority('ROLE_ADMIN')") // Seuls les ADMIN peuvent accéder à cet endpoint
 public class MenuController {
 
     private final MenuService menuService;
 
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')") // Seuls les ADMIN peuvent accéder à cet endpoint
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<MenuResponse> createMenu(
             @Valid @ModelAttribute MenuRequest menuRequest,
@@ -27,6 +30,29 @@ public class MenuController {
             ){
         MenuResponse menuResponse = menuService.createMenu(menuRequest, image);
         return ResponseEntity.status(HttpStatus.CREATED).body(menuResponse);
+    }
+
+    @GetMapping("/{menuId}")
+    public ResponseEntity<MenuResponse> getMenuById(@PathVariable Long menuId){
+        MenuResponse menuResponse = menuService.getMenuById(menuId);
+        return ResponseEntity.ok(menuResponse);
+    }
+
+    @GetMapping
+    public ResponseEntity<Page<MenuResponse>> getAllMenus(
+            @PageableDefault(size = 10, page = 0, sort = "menuId")Pageable pageable
+            ){
+        Page<MenuResponse> menus = menuService.getAllMenus(pageable);
+        return ResponseEntity.ok(menus);
+    }
+
+    @PatchMapping("/{menuId}")
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    public ResponseEntity<MenuResponse> updateMenu(@PathVariable Long menuId,
+                                                   @Valid @ModelAttribute MenuRequest menuRequest,
+                                                   @RequestParam(required = false) MultipartFile image){
+        MenuResponse menuResponse = menuService.updateMenu(menuId, menuRequest, image);
+        return ResponseEntity.ok(menuResponse);
     }
 
 }

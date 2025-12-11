@@ -4,6 +4,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
@@ -29,7 +30,16 @@ public class SecurityConfig {
                 .cors(Customizer.withDefaults())
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(req -> req.requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers("/api/menus/**").hasAuthority("ROLE_ADMIN")
+                        .requestMatchers(HttpMethod.GET,"/api/menus").permitAll()
+                        .requestMatchers(HttpMethod.GET,"/api/menus/**").permitAll()
+                        .requestMatchers(HttpMethod.POST,"/api/menus").hasAuthority("ROLE_ADMIN")
+                        .requestMatchers(HttpMethod.PUT,"/api/menus/**").hasAuthority("ROLE_ADMIN")
+                        .requestMatchers(HttpMethod.PATCH,"/api/menus/**").hasAuthority("ROLE_ADMIN")
+                        .requestMatchers(HttpMethod.DELETE,"/api/menus/**").hasAuthority("ROLE_ADMIN")
+                        .requestMatchers(HttpMethod.GET,"/api/factures").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/commandes").hasAuthority("ROLE_CLIENT")
+                        .requestMatchers(HttpMethod.PATCH, "/api/commandes/**").hasAuthority("ROLE_ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/factures/**").hasAuthority("ROLE_ADMIN")
                         .anyRequest().authenticated())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);

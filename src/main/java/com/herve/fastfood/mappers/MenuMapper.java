@@ -51,4 +51,15 @@ public class MenuMapper {
                 .map(this::toDto)
                 .collect(Collectors.toList());
     }
+
+    public void updateEntityFromDto(MenuRequest menuRequest, Menu menu) {
+        if (menuRequest == null || menu == null) {
+            return;
+        }
+        menu.setNom(menuRequest.getNom());
+        menu.setDescription(menuRequest.getDescription());
+        menu.setPrix(menuRequest.getPrix());
+        menu.setCategorie(menuRequest.getCategorie());
+        menu.setDisponible(menuRequest.getDisponible() != null ? menuRequest.getDisponible() : menu.getDisponible());
+    }
 }

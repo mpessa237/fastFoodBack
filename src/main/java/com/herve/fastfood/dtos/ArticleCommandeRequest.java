@@ -5,16 +5,12 @@ import jakarta.validation.constraints.NotEmpty;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.antlr.v4.runtime.misc.NotNull;
 
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 public class ArticleCommandeRequest {
-    @NotEmpty(message = "L'ID du menu est obligatoire")
-    @NotBlank(message = "L'ID du menu est obligatoire")
     private Long menuId;
-
-    @NotEmpty(message = "La quantité est obligatoire")
-    @NotBlank(message = "La quantité est obligatoire")
     private Integer quantite;
 }

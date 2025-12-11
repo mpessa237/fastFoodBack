@@ -13,7 +13,6 @@ import java.util.List;
 @NoArgsConstructor
 public class CommandeResponse {
     private Long commandeId;
-    private Long utilisateurId;
     private String nom; // Nom de l'utilisateur pour affichage
     private List<ArticleCommandeResponse> articles;
     private StatusCommande statusCommande;

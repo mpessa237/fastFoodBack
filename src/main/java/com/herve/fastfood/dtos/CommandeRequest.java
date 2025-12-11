@@ -13,13 +13,5 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 public class CommandeRequest {
-
-
-    @NotEmpty(message = "L'ID de l'utilisateur est obligatoire")
-    @NotBlank(message = "L'ID de l'utilisateur est obligatoire")
-    private Long utilisateurId;
-
-    @NotEmpty(message = "La commande doit contenir au moins un article")
-    @NotBlank(message = "La commande doit contenir au moins un article")
     private List<ArticleCommandeRequest> articles;
 }
