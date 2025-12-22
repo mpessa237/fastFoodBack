@@ -8,34 +8,65 @@ import com.herve.fastfood.models.Utilisateur;
 import com.herve.fastfood.services.UtilisateurService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
 
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/auth")
+@CrossOrigin(origins = "http://localhost:4200")
 public class UtilisateurController {
 
     private final UtilisateurService utilisateurService ;
 
     @PostMapping("/register")
-    public ResponseEntity<?> create(@Valid @RequestBody UtilisateurRequest utilisateurRequest ){
-
-        utilisateurService.register(utilisateurRequest);
-        return ResponseEntity.ok("inscription reussie");
+    public ResponseEntity<Map<String, Object>> create(@Valid @RequestBody UtilisateurRequest utilisateurRequest) {
+        try {
+            utilisateurService.register(utilisateurRequest);
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "message", "Inscription réussie !"
+            ));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "success", false,
+                    "message", e.getMessage()
+            ));
+        }
     }
 
+
     @PostMapping("/admin/register")
-    public ResponseEntity<Utilisateur> create(@Valid @RequestBody AdminRequest adminRequest){
-        return ResponseEntity.ok(utilisateurService.registerAdmin(adminRequest));
+    public ResponseEntity<Utilisateur> save(@Valid @RequestBody UtilisateurRequest utilisateurRequest){
+        return ResponseEntity.ok(utilisateurService.registerAdmin(utilisateurRequest));
     }
 
     @PostMapping("/authenticate")
-    public ResponseEntity<LoginResponse> authenticate(@Valid @RequestBody LoginRequest loginRequest){
-        return ResponseEntity.ok(this.utilisateurService.login(loginRequest));
+    public ResponseEntity<?> authenticate(@Valid @RequestBody LoginRequest loginRequest) {
+        try {
+            System.out.println("Requête d'authentification reçue pour: " + loginRequest.getEmail());
+
+            LoginResponse response = this.utilisateurService.login(loginRequest);
+
+            return ResponseEntity.ok(response);
+        } catch (BadCredentialsException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
+                    Map.of("message", "Email ou mot de passe incorrect")
+            );
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
+                    Map.of("message", e.getMessage())
+            );
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                    Map.of("message", "Une erreur est survenue: " + e.getMessage())
+            );
+        }
     }
+
 
 }

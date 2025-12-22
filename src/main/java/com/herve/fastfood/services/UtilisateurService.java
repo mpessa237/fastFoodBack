@@ -13,7 +13,11 @@ import com.herve.fastfood.securities.JwtService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -35,33 +39,37 @@ public class UtilisateurService {
 
     public void register(UtilisateurRequest utilisateurRequest) {
 
+        System.out.println("Données reçues dans register : " + utilisateurRequest);
+        System.out.println("Mot de passe reçu : " + utilisateurRequest.getPassword());
+
         if (utilisateurRepo.existsByEmail(utilisateurRequest.getEmail())){
             throw new RuntimeException("email already exists!!");
         }
 
         Utilisateur utilisateur = new Utilisateur();
         utilisateur.setNom(utilisateurRequest.getNom());
-        utilisateur.setAdresse(utilisateurRequest.getAdresse());
         utilisateur.setTelephone(utilisateurRequest.getTelephone());
         utilisateur.setEmail(utilisateurRequest.getEmail());
-        utilisateur.setMotDePasse(passwordEncoder.encode(utilisateurRequest.getMotDePasse()));
+        System.out.println("Mot de passe avant encodage : " + utilisateurRequest.getPassword());
+        utilisateur.setPassword(passwordEncoder.encode(utilisateurRequest.getPassword()));
+        System.out.println("Mot de passe après encodage : " + utilisateur.getPassword());
         utilisateur.setRole(Set.of(Role.CLIENT));
 
         utilisateurRepo.save(utilisateur);
     }
 
 
-    public Utilisateur registerAdmin( AdminRequest adminRequest) {
+    public Utilisateur registerAdmin(UtilisateurRequest utilisateurRequest ) {
 
-        if (utilisateurRepo.existsByEmail(adminRequest.getEmail())){
+        if (utilisateurRepo.existsByEmail(utilisateurRequest.getEmail())){
             throw new RuntimeException("email already exists!!");
         }
 
         Utilisateur utilisateur = new Utilisateur();
-        utilisateur.setNom(adminRequest.getNom());
-        utilisateur.setEmail(adminRequest.getEmail());
-        utilisateur.setTelephone(adminRequest.getTelephone());
-        utilisateur.setMotDePasse(passwordEncoder.encode(adminRequest.getMotDePasse()));
+        utilisateur.setNom(utilisateurRequest.getNom());
+        utilisateur.setEmail(utilisateurRequest.getEmail());
+        utilisateur.setTelephone(utilisateurRequest.getTelephone());
+        utilisateur.setPassword(passwordEncoder.encode(utilisateurRequest.getPassword()));
         utilisateur.setRole(Set.of(Role.ADMIN));
 
         return utilisateurRepo.save(utilisateur);
@@ -70,33 +78,50 @@ public class UtilisateurService {
 
 
     public LoginResponse login(LoginRequest loginRequest) {
-        authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        loginRequest.getEmail(),
-                        loginRequest.getMotDePasse()
-                )
-        );
+        try {
+            // Authentification
+            Authentication authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(
+                            loginRequest.getEmail(),
+                            loginRequest.getPassword()
+                    )
+            );
 
-        var utilisateur = utilisateurRepo.findByEmail(loginRequest.getEmail())
-                .orElseThrow(()-> new IllegalArgumentException("user not found!!"));
+            // Mise à jour du contexte de sécurité
+            SecurityContextHolder.getContext().setAuthentication(authentication);
 
+            // Récupération de l'utilisateur
+            var utilisateur = utilisateurRepo.findByEmail(loginRequest.getEmail())
+                    .orElseThrow(() -> new IllegalArgumentException("User not found!"));
 
-        var accessToken = jwtService.generateAccessToken(utilisateur);
-        var refreshToken = jwtService.generateRefreshToken();
+            // Génération des tokens
+            var accessToken = jwtService.generateAccessToken(utilisateur);
+            var refreshToken = jwtService.generateRefreshToken();
 
-        refreshTokenRepo.save(new RefreshToken(utilisateur, refreshToken));
+            // Sauvegarde du refresh token
+            refreshTokenRepo.save(new RefreshToken(utilisateur, refreshToken));
 
-        LoginResponse loginResponse = new LoginResponse();
-        loginResponse.setAccessToken(accessToken);
-        loginResponse.setRefreshToken(refreshToken);
-        loginResponse.setAccessTokenExpiration(JwtService.ACCESS_TOKEN_EXPIRATION);
-        loginResponse.setRoles(
-                utilisateur.getRole().stream()
-                        .map(Role::name)
-                        .collect(Collectors.toList())
-        );
-        return loginResponse;
+            // Construction de la réponse
+            LoginResponse loginResponse = new LoginResponse();
+            loginResponse.setAccessToken(accessToken);
+            loginResponse.setRefreshToken(refreshToken);
+            loginResponse.setAccessTokenExpiration(JwtService.ACCESS_TOKEN_EXPIRATION);
+            loginResponse.setRoles(
+                    utilisateur.getRole().stream()
+                            .map(Role::name)
+                            .collect(Collectors.toList())
+            );
+
+            return loginResponse;
+        } catch (BadCredentialsException e) {
+            throw new RuntimeException("Email ou mot de passe incorrect", e);
+        } catch (DisabledException e) {
+            throw new RuntimeException("Compte désactivé", e);
+        } catch (Exception e) {
+            throw new RuntimeException("Erreur d'authentification: " + e.getMessage(), e);
+        }
     }
+
 
     public LoginResponse refreshToken(String refreshToken) {
         // 1. Vérification du Refresh Token

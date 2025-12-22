@@ -2,6 +2,9 @@ package com.herve.fastfood.controllers;
 
 import com.herve.fastfood.dtos.MenuRequest;
 import com.herve.fastfood.dtos.MenuResponse;
+import com.herve.fastfood.mappers.MenuMapper;
+import com.herve.fastfood.models.Menu;
+import com.herve.fastfood.repositories.MenuRepo;
 import com.herve.fastfood.services.MenuService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +24,8 @@ import org.springframework.web.multipart.MultipartFile;
 public class MenuController {
 
     private final MenuService menuService;
+    private final MenuRepo menuRepo;
+    private final MenuMapper menuMapper;
 
     @PreAuthorize("hasAuthority('ROLE_ADMIN')") // Seuls les ADMIN peuvent accéder à cet endpoint
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -39,11 +44,10 @@ public class MenuController {
     }
 
     @GetMapping
-    public ResponseEntity<Page<MenuResponse>> getAllMenus(
-            @PageableDefault(size = 10, page = 0, sort = "menuId")Pageable pageable
-            ){
-        Page<MenuResponse> menus = menuService.getAllMenus(pageable);
-        return ResponseEntity.ok(menus);
+    public ResponseEntity<Page<MenuResponse>> getAllMenus(@PageableDefault(size = 10) Pageable pageable) {
+        Page<Menu> menus = menuRepo.findAll(pageable);
+        Page<MenuResponse> menuResponses = menus.map(menuMapper::toDto);
+        return ResponseEntity.ok(menuResponses);
     }
 
     @PatchMapping("/{menuId}")

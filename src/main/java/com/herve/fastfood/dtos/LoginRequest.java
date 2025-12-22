@@ -16,8 +16,7 @@ public class LoginRequest {
     @NotBlank(message = "Email is mandatory")
     @Email(message = "Email not well formatted")
     private String email;
-    @NotEmpty(message = "MotDePasse is mandatory")
     @NotBlank(message = "MotDePasse is mandatory")
     @Size(min = 8, message = "MotDePasse should be 8 characters minimum")
-    private String motDePasse;
+    private String password;
 }

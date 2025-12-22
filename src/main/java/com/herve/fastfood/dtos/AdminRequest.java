@@ -18,6 +18,6 @@ public class AdminRequest {
     private String nom;
     @NotEmpty(message = "MotDePasse is mandatory")
     @NotBlank(message = "MotDePasse is mandatory")
-    private String motDePasse;
+    private String password;
     private String telephone;
 }

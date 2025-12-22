@@ -26,7 +26,7 @@ public class Utilisateur implements UserDetails {
     private Long utilisateurId;
     private String nom;
     private String email;
-    private String motDePasse;
+    private String password;
     private String adresse;
     private String telephone;
     @Enumerated(EnumType.STRING)
@@ -45,7 +45,7 @@ public class Utilisateur implements UserDetails {
 
     @Override
     public String getPassword() {
-        return motDePasse;
+        return password;
     }
 
     @Override

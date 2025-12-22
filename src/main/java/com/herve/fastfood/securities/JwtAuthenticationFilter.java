@@ -39,7 +39,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             @NonNull HttpServletResponse response,
             @NonNull FilterChain filterChain) throws ServletException, IOException {
 
-        if (request.getServletPath().contains("/api/auth")) {
+        // Ignore les requêtes vers /api/auth/ pour éviter les blocages
+        if (request.getServletPath().startsWith("/api/auth/")) {
             filterChain.doFilter(request, response);
             return;
         }
@@ -53,20 +54,28 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         try {
             final String jwt = authHeader.substring(7);
-            System.out.println("JWT: " + jwt); // Log
+            System.out.println("JWT: " + jwt);
+
+            // Vérifie si le token est expiré avant de continuer
+            if (jwtService.isTokenExpired(jwt)) {
+                System.out.println("Token is expired");
+                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Token expiré");
+                return;
+            }
+
             final String userEmail = jwtService.extractUsername(jwt);
-            System.out.println("User email: " + userEmail); // Log
+            System.out.println("User email: " + userEmail);
 
             if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                 UserDetails userDetails = userDetailsService.loadUserByUsername(userEmail);
-                System.out.println("User details loaded: " + userDetails.getUsername()); // Log
+                System.out.println("User details loaded: " + userDetails.getUsername());
 
                 if (jwtService.isTokenValid(jwt, userDetails)) {
                     List<String> roles = jwtService.extractRoles(jwt);
-                    System.out.println("User roles: " + roles); // Log
+                    System.out.println("User roles: " + roles);
 
                     List<GrantedAuthority> authorities = roles.stream()
-                            .map(role -> new SimpleGrantedAuthority("ROLE_" + role))
+                            .map(role -> new SimpleGrantedAuthority(role))
                             .collect(Collectors.toList());
 
                     UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
@@ -77,17 +86,20 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
                     authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                     SecurityContextHolder.getContext().setAuthentication(authentication);
-                    System.out.println("Authentication set for user: " + userEmail); // Log
+                    System.out.println("Authentication set for user: " + userEmail);
                 }
             }
         } catch (ExpiredJwtException e) {
-            System.out.println("Token is expired: " + e.getMessage()); // Log
+            System.out.println("Token is expired: " + e.getMessage());
             response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Token expiré");
+            return;
         } catch (Exception e) {
-            System.out.println("Token is invalid: " + e.getMessage()); // Log
+            System.out.println("Token is invalid: " + e.getMessage());
             response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Token invalide");
+            return;
         }
 
         filterChain.doFilter(request, response);
     }
+
 }
